@@ -27,3 +27,23 @@ function countUpperLetter(string, letter) {
 }
 
 countUpperLetter('TesTe', 't')
+
+function countUpperLetterRecursive(string, letter, index = 0, count = 0) {
+    if (index >= string.length) {
+      console.log(count)
+      return count
+    }
+    
+    const loopLetter = string[index]
+    const matchLetter = loopLetter === letter || loopLetter === letter.toUpperCase()
+    const isUpperLatter = loopLetter === loopLetter.toUpperCase()
+    const condition = matchLetter && isUpperLatter
+    
+    if (condition) {
+      count += 1
+    }
+    
+    return countUpperLetterRecursive(string, letter, index + 1, count)
+}
+  
+countUpperLetterRecursive('TesTe', 't')
