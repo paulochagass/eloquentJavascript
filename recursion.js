@@ -16,7 +16,7 @@ of a way to fix this?
 function isEven(number) {
     if (number === 0) return console.log(true)
     if (number === 1) return console.log(false)
-    isEven(number - 2)
+    isEven(number < 0 ? number + 2 : number - 2)
 }
 
-isEven(3)
+isEven(-14)
