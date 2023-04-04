@@ -20,12 +20,14 @@ class Group {
     }
 
     from (iterable) {
-        const group = new Group;
-
-        for (value of iterable) {
-            group.add(value);
+        for (let value of iterable) {
+            this.add(value);
         }
 
-        return group;
+        return this;
     }
+}
+
+module.exports = {
+    Group
 }
