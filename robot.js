@@ -8,84 +8,108 @@ const roads = [
     "Marketplace-Town Hall", "Shop-Town Hall"
 ];
 
-function buildGraph(edges) {
-    let graph = new Map()
-
-    function addEdge(from, to) {
-        if (!graph.has(from)) {
-            graph.set(from, [to])
-        } else {
-            graph.get(from).push(to);
-        }
-    }
-
-    for (let [from, to] of edges.map(edge => edge.split("-"))) {
-        addEdge(from, to);
-        addEdge(to, from);
-    }
-
-    return graph;
-}
-
-const roadGraph = buildGraph(roads);
-
-function randomPick(array) {
-    let choice = Math.floor(Math.random() * array.length);
-    return array[choice];
-}
+const mailRoute = [
+    "Alice's House", "Cabin", "Alice's House", "Bob's House",
+    "Town Hall", "Daria's House", "Ernie's House",
+    "Grete's House", "Shop", "Grete's House", "Farm",
+    "Marketplace", "Post Office"
+];
 
 class VillageState {
-    constructor(place, parcels) {
+    constructor(place, parcels, roadGraph) {
         this.place = place;
         this.parcels = parcels;
+        this.roadGraph = roadGraph;
     }
 
     move(destination) {
-        if (!roadGraph.get(this.place).includes(destination)) return this;
-
-        const moveParcels = parcel => {
-            if (parcel.place != this.place) return parcel;
-
-            return { place: destination, address: parcel.address };
+        if (!this.roadGraph.get(this.place).includes(destination)) {
+            return this
         }
 
-        const packagesNotDelivered = parcel => parcel.place != parcel.address
+        const moveParcels = (parcel) => {
+            if (parcel.place !== this.place) return parcel
 
-        const parcels = this.parcels.map(moveParcels).filter(packagesNotDelivered);
+            return {
+                place: destination,
+                address: parcel.address
+            }
+        }
 
-        return new VillageState(destination, parcels);
+        const parcelsNotDelivered = (parcel) => parcel.place !== parcel.address
+
+        const parcels = this.parcels.map(moveParcels).filter(parcelsNotDelivered)
+
+        return new VillageState(destination, parcels, this.roadGraph)
     }
 
-    static random(parcelCount = 5) {
-        let parcels = [];
-        for (let i = 0; i < parcelCount; i++) {
-            const keys = Array.from(roadGraph.keys())
-            let address = randomPick(keys);
-            let place;
-            do {
-                place = randomPick(keys);
-            } while (place == address);
-            parcels.push({place, address});
+    static randomPlace = (roadGraph, place, except) => {
+        let places = place ? roadGraph.get(place) : Array.from(roadGraph.keys());
+        if (except) places = places.filter((p) => p !== except)
+        const randomIndex = Math.floor((Math.random() * places.length));
+        return places[randomIndex];
+    }
+
+    static buildRoadGraph(roads) {
+        let roadGraph = new Map()
+    
+        function buildRoad(from, to) {
+            if (!roadGraph.has(from)) {
+                roadGraph.set(from, [to])
+            } else {
+                roadGraph.get(from).push(to);
+            }
         }
-        return new VillageState("Post Office", parcels);
+    
+        for (let [from, to] of roads.map(edge => edge.split("-"))) {
+            buildRoad(from, to);
+            buildRoad(to, from);
+        }
+    
+        return roadGraph;
+    }
+
+    static random(roadGraph, parcelCount = 5) {
+        const parcels = new Array(parcelCount).fill(null).map(() => {
+            const place = this.randomPlace(roadGraph)
+            const address = this.randomPlace(roadGraph, false, place)
+            return { place, address }
+        })
+        const place = this.randomPlace(roadGraph)
+        return new VillageState(place, parcels, roadGraph)
+    }
+
+    static routeRobot(memory) {
+        if (memory.length == 0 ) {
+            memory = mailRoute;
+        }
+        return { direction: memory[0], memory: memory.slice(1) }
+    }
+
+    static runRobot(villageState) {
+        let count = 0
+        let memory = [];
+        let direction;
+    
+        while (villageState.parcels.length !== 0) {
+            const route = this.routeRobot(memory);
+
+            memory = route.memory;
+            direction = route.direction;
+            
+            villageState = villageState.move(
+                direction
+            )
+            
+            count += 1
+        }
+    
+        console.log(count)
     }
 }
 
-function runRobot(state, robot, memory) {
-    for (let turn = 0;; turn++) {
-        if (state.parcels.length == 0) {
-            console.log(`Done in ${turn} turns`);
-            break;
-        }
-        let action = robot(state, memory);
-        state = state.move(action.direction);
-        memory = action.memory;
-        console.log(`Moved to ${action.direction}`);
-    }
-}
+const roadGraph = VillageState.buildRoadGraph(roads)
 
-function randomRobot(state) {
-    return {direction: randomPick(roadGraph.get(state.place))};
-}
+const village = VillageState.random(roadGraph)
 
-runRobot(VillageState.random(), randomRobot);
+VillageState.runRobot(village)
